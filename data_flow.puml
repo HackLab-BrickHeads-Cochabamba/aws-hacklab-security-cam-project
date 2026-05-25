@@ -1,0 +1,60 @@
+@startuml
+autonumber
+skinparam BoxPadding 15
+skinparam ParticipantPadding 12
+
+box "Local Environment / Edge" #LightYellow
+participant "Camera + Python Script\n(GStreamer / KVS SDK)" as Cam
+end box
+
+box "AWS Ingestion & Processing" #LightCyan
+participant "AWS Kinesis Video Streams\n(KVS)" as KVS
+participant "AWS Rekognition\n(Stream Processor)" as Rek
+participant "Amazon Kinesis Data Streams\n(KDS)" as KDS
+end box
+
+box "Logic & Notification" #LightCyan
+participant "AWS Lambda\n(Python 3.12)" as Lambda
+participant "Amazon DynamoDB\n(Alerts/State Table)" as DB
+participant "Amazon S3" as S3
+participant "Amazon SNS" as SNS
+end box
+
+actor "User / Administrator" as User
+
+== Live Video Ingestion ==
+Cam -> KVS: Transmits real-time video stream (RTSP)
+activate KVS
+
+== Artificial Intelligence Analysis ==
+KVS -> Rek: Consumes live video stream
+activate Rek
+Rek -> Rek: Runs computer vision models\n(Person/Face/Moderation detection)
+Rek -> KDS: Emits detection metadata (JSON with coordinates)
+deactivate Rek
+activate KDS
+
+== Serverless Orchestration ==
+KDS -> Lambda: Triggers execution with detection batch
+activate Lambda
+
+Lambda -> DB: Check recent alerts (Deduplication / Rate limiting)
+activate DB
+DB --> Lambda: Return last alert timestamp
+deactivate DB
+
+Lambda -> Lambda: Evaluates business logic\n(e.g., Is it an intruder during off-hours?)
+
+alt If valid & non-duplicate alert is detected
+    Lambda -> S3: Saves video frame/clip as evidence
+    Lambda -> DB: Log alert event & update state (Active Alert)
+    Lambda -> SNS: Publishes critical alert event
+    activate SNS
+    SNS -> User: Sends immediate notification (SMS / Email / Webhook Bot)
+    deactivate SNS
+end
+
+deactivate Lambda
+deactivate KDS
+deactivate KVS
+@enduml
