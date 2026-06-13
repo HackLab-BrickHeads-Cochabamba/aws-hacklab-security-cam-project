@@ -30,7 +30,7 @@ def lambda_handler(event, context):
             bbox = person["Person"]["BoundingBox"]
 
             print(
-                f"  -> 👤 Persona ID {track_id} detectada con {confidence}% de confianza."
+                f"  -> Persona ID {track_id} detectada con {confidence}% de confianza."
             )
             print(
                 f"     Coordenadas: Top={bbox['Top']}, Left={bbox['Left']}, Width={bbox['Width']}, Height={bbox['Height']}"
@@ -40,7 +40,7 @@ def lambda_handler(event, context):
             # - Si confidence > 90% y está en una zona prohibida -> Guardar en S3 o enviar SMS por SNS.
             if confidence > 95:
                 print(
-                    "  --- 🚨 [ALERTA DE SEGURIDAD] Alta certeza de intrusión. Almacenando reporte... ---"
+                    "  --- [ALERTA DE SEGURIDAD] Alta certeza de intrusión. Almacenando reporte... ---"
                 )
 
     return {

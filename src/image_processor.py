@@ -32,7 +32,7 @@ def main():
     height, width, channels = image.shape
 
     print("=== Edge Processor: Modo Imagen Real (Simulado) ===")
-    print(f"📷 Cargada imagen: {IMAGE_PATH} ({width}x{height} píxeles)")
+    print(f"Cargada imagen: {IMAGE_PATH} ({width}x{height} píxeles)")
 
     # 2. Simular una Bounding Box basada en el tamaño REAL de tu imagen
     # AWS Rekognition no te da píxeles, te da porcentajes (de 0 a 1) del tamaño de la foto.
@@ -45,7 +45,7 @@ def main():
     payload = generate_rekognition_payload(mock_detected_persons)
 
     # Imprimir en consola para verificar las coordenadas calculadas
-    print("\n📦 Payload generado para Kinesis:")
+    print("\nPayload generado para Kinesis:")
     bbox = payload["Persons"][0]["Person"]["BoundingBox"]
     print(f"   Persona detectada en: Left={bbox['Left']}, Top={bbox['Top']}")
     print(f"   Tamaño relativo: Width={bbox['Width']}, Height={bbox['Height']}")
@@ -60,14 +60,14 @@ def main():
             PartitionKey="static_image_test",
         )
         print(
-            f"✅ ¡Enviado con éxito! SequenceNumber: {response['SequenceNumber'][:30]}..."
+            f"¡Enviado con éxito! SequenceNumber: {response['SequenceNumber'][:30]}..."
         )
         print(
             "Revisa tu otra terminal (el consumidor Lambda) para ver cómo procesa tu foto."
         )
 
     except Exception as e:
-        print(f"❌ Falló el envío a LocalStack: {e}")
+        print(f"Falló el envío a LocalStack: {e}")
 
 
 if __name__ == "__main__":
