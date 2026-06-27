@@ -7,7 +7,7 @@ from mock_rekognition import generate_rekognition_payload
 
 STREAM_NAME = "rekognition-person-stream"
 
-print("🧠 Cargando modelo de Inteligencia Artificial YOLOv8...")
+print("Cargando modelo de Inteligencia Artificial YOLOv8...")
 model = YOLO("yolov8n.pt")
 
 kinesis_client = boto3.client(
@@ -29,8 +29,8 @@ def main():
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    print(f"🎥 Webcam activada correctamente ({width}x{height}px)")
-    print("⌨️  Haz clic en la ventana del video y presiona 'q' para cerrar la cámara.")
+    print(f"Webcam activada correctamente ({width}x{height}px)")
+    print("Haz clic en la ventana del video y presiona 'q' para cerrar la cámara.")
 
     frame_count = 0
     PROCESS_INTERVAL_SEC = 0.5
@@ -45,7 +45,7 @@ def main():
         frame_count += 1
         current_time = time.time()
 
-        #Zona segura, porcentajes porsi
+        # Zona segura, porcentajes porsi
         x_min, x_max = int(width * 0.20), int(width * 0.80)
         y_min, y_max = int(height * 0.20), int(height * 0.80)
         cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), (0, 255, 255), 1)
@@ -71,20 +71,23 @@ def main():
 
                 if label == "person":
                     x1, y1, x2, y2 = box.xyxy[0].tolist()
+                    confidence = round(float(box.conf[0]) * 100, 2)
 
                     left = round(x1 / width, 4)
                     top = round(y1 / height, 4)
                     box_width = round((x2 - x1) / width, 4)
                     box_height = round((y2 - y1) / height, 4)
 
-                    detected_persons.append([left, top, box_width, box_height])
+                    detected_persons.append(
+                        [left, top, box_width, box_height, confidence]
+                    )
 
                     cv2.rectangle(
                         frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2
                     )
                     cv2.putText(
                         frame,
-                        "Persona",
+                        f"Persona: {confidence}%",
                         (int(x1), int(y1) - 10),
                         cv2.FONT_HERSHEY_SIMPLEX,
                         0.5,
@@ -94,7 +97,7 @@ def main():
 
             if len(detected_persons) > 0:
                 print(
-                    f"⏰ [INTERVALO] Frame #{frame_count} | Personas: {len(detected_persons)}"
+                    f"[INTERVALO] Frame #{frame_count} | Personas: {len(detected_persons)}"
                 )
                 payload = generate_rekognition_payload(detected_persons)
                 payload["FrameNumber"] = frame_count
@@ -116,7 +119,7 @@ def main():
 
     cap.release()
     cv2.destroyAllWindows()
-    print("🏁 Programa finalizado con éxito.")
+    print("Programa finalizado con éxito.")
 
 
 if __name__ == "__main__":
