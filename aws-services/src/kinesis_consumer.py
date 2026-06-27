@@ -17,7 +17,6 @@ kinesis_client = boto3.client(
 def main():
     print(f"=== Escuchando Kinesis Stream: {STREAM_NAME} ===")
 
-    # 🛠️ VALIDACIÓN Y CREACIÓN AUTOMÁTICA DEL STREAM
     try:
         response = kinesis_client.describe_stream(StreamName=STREAM_NAME)
         print(f"El stream '{STREAM_NAME}' ya existe.")
@@ -26,10 +25,8 @@ def main():
         kinesis_client.create_stream(StreamName=STREAM_NAME, ShardCount=1)
         print("Esperando 3 segundos a que LocalStack active el stream...")
         time.sleep(3)
-        # Volvemos a pedir la descripción ahora que ya está creado
         response = kinesis_client.describe_stream(StreamName=STREAM_NAME)
 
-    # Obtener el ShardId
     shard_id = response["StreamDescription"]["Shards"][0]["ShardId"]
 
     shard_iterator_resp = kinesis_client.get_shard_iterator(
@@ -46,15 +43,12 @@ def main():
         if records:
             mock_records = []
             for record in records:
-                # Convertimos los bytes puros de Kinesis a un string Base64 real
-                # tal como lo haría AWS al invocar una Lambda en producción.
                 b64_data = base64.b64encode(record["Data"]).decode("utf-8")
 
                 mock_records.append({"kinesis": {"data": b64_data}})
 
             mock_lambda_event = {"Records": mock_records}
 
-            # Invocar a la Lambda local pasándole el evento mockeado
             lambda_handler(mock_lambda_event, None)
 
         shard_iterator = records_response["NextShardIterator"]

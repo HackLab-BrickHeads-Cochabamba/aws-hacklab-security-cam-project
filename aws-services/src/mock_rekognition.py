@@ -1,14 +1,9 @@
 import time
 
 def generate_rekognition_payload(detected_persons):
-    """
-    Estructura los datos de detección locales para que coincidan 
-    exactamente con el formato de AWS Rekognition Video Stream Processor.
-    """
     persons_payload = []
     
     for idx, box in enumerate(detected_persons):
-        # box esperado: [x_min, y_min, x_max, y_max] con valores de 0.0 a 1.0
         x1, y1, x2, y2 = box
         
         persons_payload.append({

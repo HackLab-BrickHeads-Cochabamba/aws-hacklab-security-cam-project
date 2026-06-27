@@ -1,7 +1,7 @@
 import cv2
 import json
 import boto3
-import os
+import time
 from ultralytics import YOLO
 from mock_rekognition import generate_rekognition_payload
 
@@ -33,8 +33,8 @@ def main():
     print("⌨️  Haz clic en la ventana del video y presiona 'q' para cerrar la cámara.")
 
     frame_count = 0
-
-    FRAME_INTERVAL = 1
+    PROCESS_INTERVAL_SEC = 0.5
+    last_processed_time = 0.0
 
     while cap.isOpened():
         ret, frame = cap.read()
@@ -43,8 +43,25 @@ def main():
             break
 
         frame_count += 1
+        current_time = time.time()
 
-        if frame_count % FRAME_INTERVAL == 0:
+        #Zona segura, porcentajes porsi
+        x_min, x_max = int(width * 0.20), int(width * 0.80)
+        y_min, y_max = int(height * 0.20), int(height * 0.80)
+        cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), (0, 255, 255), 1)
+        cv2.putText(
+            frame,
+            "ZONA CENTRAL AMPLIA",
+            (x_min + 5, y_min + 20),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.4,
+            (0, 255, 255),
+            1,
+        )
+
+        if current_time - last_processed_time >= PROCESS_INTERVAL_SEC:
+            last_processed_time = current_time
+
             results = model(frame, verbose=False)[0]
             detected_persons = []
 
@@ -53,7 +70,6 @@ def main():
                 label = results.names[class_id]
 
                 if label == "person":
-                    # Coordenadas absolutas de la caja de detección
                     x1, y1, x2, y2 = box.xyxy[0].tolist()
 
                     left = round(x1 / width, 4)
@@ -63,11 +79,9 @@ def main():
 
                     detected_persons.append([left, top, box_width, box_height])
 
-                    # Dibujar cuadro verde (0, 255, 0)
                     cv2.rectangle(
                         frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2
                     )
-                    # Dibujar texto arriba del cuadro
                     cv2.putText(
                         frame,
                         "Persona",
@@ -78,10 +92,9 @@ def main():
                         2,
                     )
 
-            # Si hay personas en este frame, enviamos la alerta a Kinesis
             if len(detected_persons) > 0:
                 print(
-                    f"Frame #{frame_count} | Personas en directo: {len(detected_persons)}"
+                    f"⏰ [INTERVALO] Frame #{frame_count} | Personas: {len(detected_persons)}"
                 )
                 payload = generate_rekognition_payload(detected_persons)
                 payload["FrameNumber"] = frame_count
@@ -95,15 +108,12 @@ def main():
                 except Exception as e:
                     print(f"Error al enviar a LocalStack: {e}")
 
-        # 📺 Mostrar la transmisión de la cámara con los dibujos aplicados
         cv2.imshow("YOLOv8 Webcam Detect - Presiona 'q' para salir", frame)
 
-        # En webcam usamos cv2.waitKey(1) para que el refresco sea lo más rápido posible (1ms)
         if cv2.waitKey(1) & 0xFF == ord("q"):
             print("Webcam detenida por el usuario.")
             break
 
-    # Limpieza absoluta de la cámara
     cap.release()
     cv2.destroyAllWindows()
     print("🏁 Programa finalizado con éxito.")
